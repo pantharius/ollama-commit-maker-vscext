@@ -64,11 +64,13 @@
     "commands": [
       {
         "command": "ollamaCommitMaker.generateCommitMessage",
-        "title": "Generate Commit Message"
+        "title": "Generate Commit Message",
+        "icon": "$(hubot)"
       },
       {
         "command": "ollamaCommitMaker.openHistory",
-        "title": "Open Commit Message History"
+        "title": "Open Commit Message History",
+        "icon": "$(history)"
       }
     ],
     "menus": {
