@@ -1,0 +1,104 @@
+{
+  "name": "ollama-commit-maker",
+  "displayName": "Ollama Commit Maker",
+  "description": "Generate traceable Conventional Commit messages from staged changes using Ollama.",
+  "version": "0.0.5",
+  "publisher": "pantharius",
+  "engines": {
+    "vscode": "^1.98.0"
+  },
+  "icon": "new-logo.png",
+  "keywords": [
+    "git",
+    "commit",
+    "ollama",
+    "conventional commits",
+    "source control"
+  ],
+  "license": "MIT",
+  "categories": [
+    "Source Control",
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:ollamaCommitMaker.generateCommitMessage",
+    "onCommand:ollamaCommitMaker.openHistory"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Ollama Commit Maker",
+      "properties": {
+        "ollamaCommitMaker.ollamaUrl": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Ollama server URL"
+        },
+        "ollamaCommitMaker.model": {
+          "type": "string",
+          "default": "qwen2.5-coder",
+          "description": "Ollama model used to generate commit messages"
+        },
+        "ollamaCommitMaker.maxDiffLength": {
+          "type": "number",
+          "default": 12000,
+          "description": "Maximum staged diff length sent to Ollama"
+        },
+        "ollamaCommitMaker.useRtkIfAvailable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use RTK to compact staged changes when available"
+        },
+        "ollamaCommitMaker.rtkCommand": {
+          "type": "string",
+          "default": "rtk",
+          "description": "RTK command or binary path"
+        },
+        "ollamaCommitMaker.includeEmoji": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include an emoji in the generated commit title when relevant"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "ollamaCommitMaker.generateCommitMessage",
+        "title": "Generate Commit Message"
+      },
+      {
+        "command": "ollamaCommitMaker.openHistory",
+        "title": "Open Commit Message History"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "ollamaCommitMaker.generateCommitMessage",
+          "group": "navigation"
+        },
+        {
+          "command": "ollamaCommitMaker.openHistory",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.98.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.21.0",
+    "globals": "^16.5.0",
+    "vsce": "^2.15.0"
+  }
+}
