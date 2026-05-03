@@ -10,6 +10,15 @@ suite("Ollama Commit Maker Extension", () => {
     assert.strictEqual(typeof extension.deactivate, "function");
   });
 
+  test("Git helper module should expose expected functions", () => {
+    const git = require("../src/git");
+
+    assert.strictEqual(typeof git.getGitApi, "function");
+    assert.strictEqual(typeof git.getRepository, "function");
+    assert.strictEqual(typeof git.getCommitInput, "function");
+    assert.strictEqual(typeof git.setCommitInput, "function");
+  });
+
   test("Commands should be registered", async () => {
     const commands = await vscode.commands.getCommands(true);
 
