@@ -77,13 +77,17 @@ async function generateCommitMessageWithOllama({
       throw new Error(`Ollama request failed (${response.status}): ${detail}`);
     }
 
-    const message = cleanGeneratedCommitMessage(body.response || "");
+    const rawResponse = body.response || "";
+    const message = cleanGeneratedCommitMessage(rawResponse);
 
     if (!message) {
       throw new Error("Ollama returned an empty commit message.");
     }
 
-    return message;
+    return {
+      rawResponse,
+      cleanedCommitMessage: message,
+    };
   } catch (error) {
     if (error.name === "AbortError") {
       throw new Error("Ollama request timed out.");

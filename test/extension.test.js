@@ -60,6 +60,14 @@ suite("Ollama Commit Maker Extension", () => {
     assert.strictEqual(typeof ollama.cleanGeneratedCommitMessage, "function");
   });
 
+  test("History helper module should expose expected functions", () => {
+    const history = require("../src/history");
+
+    assert.strictEqual(typeof history.appendHistoryEntry, "function");
+    assert.strictEqual(typeof history.readHistoryEntries, "function");
+    assert.strictEqual(typeof history.getHistoryFileUri, "function");
+  });
+
   test("Ollama helper should clean generated commit messages", () => {
     const { cleanGeneratedCommitMessage } = require("../src/ollama");
 
