@@ -10,5 +10,5 @@ All notable changes to the "Ollama Commit Maker" extension will be documented in
 - Detect RTK when enabled, with automatic Git fallback.
 - Show progress while collecting context and waiting for Ollama.
 - Store local JSONL traces for successes and failures.
-- Add a Webview history with trace details and diff viewer.
+- Add a Webview history with trace details and native VS Code diff editor integration for saved patches.
 - Keep the workflow local-first with no backend, telemetry, or automatic commits.

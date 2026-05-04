@@ -1,8 +1,6 @@
 "use strict";
 
-const path = require("path");
 const vscode = require("vscode");
-const Diff2Html = require("diff2html");
 const {
   readHistoryEntries,
   getHistoryEntryById,
@@ -10,7 +8,11 @@ const {
 } = require("./history");
 const { getRepository, setCommitInput } = require("./git");
 
+const HISTORY_DIFF_SCHEME = "ollama-commit-maker-history";
+
 let historyPanel = null;
+let diffProviderRegistered = false;
+const diffDocumentContents = new Map();
 
 function getNonce() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -27,7 +29,29 @@ function getWebviewUri(webview, extensionUri, ...segments) {
   return webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, ...segments));
 }
 
+function ensureDiffProvider(context) {
+  if (diffProviderRegistered) {
+    return;
+  }
+
+  const provider = {
+    provideTextDocumentContent(uri) {
+      return diffDocumentContents.get(uri.toString()) || "";
+    },
+  };
+
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(
+      HISTORY_DIFF_SCHEME,
+      provider
+    )
+  );
+  diffProviderRegistered = true;
+}
+
 async function openHistoryWebview(context) {
+  ensureDiffProvider(context);
+
   if (historyPanel) {
     historyPanel.reveal(vscode.ViewColumn.One);
     await postHistoryData(context, historyPanel);
@@ -43,16 +67,7 @@ async function openHistoryWebview(context) {
     {
       enableScripts: true,
       retainContextWhenHidden: true,
-      localResourceRoots: [
-        vscode.Uri.joinPath(context.extensionUri, "media"),
-        vscode.Uri.joinPath(
-          context.extensionUri,
-          "node_modules",
-          "diff2html",
-          "bundles",
-          "css"
-        ),
-      ],
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, "media")],
     }
   );
 
@@ -149,8 +164,8 @@ async function handleWebviewMessage(context, panel, message) {
     return;
   }
 
-  if (message.type === "renderDiff") {
-    await postRenderedDiff(context, panel, message.id, message.mode);
+  if (message.type === "openDiffInEditor") {
+    await openHistoryDiffInEditor(context, message.id);
     return;
   }
 
@@ -195,33 +210,160 @@ async function postHistoryData(context, panel) {
   });
 }
 
-async function postRenderedDiff(context, panel, id, mode) {
+async function openHistoryDiffInEditor(context, id) {
   const entry = await getHistoryEntryById(context, id);
-  const outputFormat = mode === "line-by-line" ? "line-by-line" : "side-by-side";
-  let html = "";
-  let error = null;
+  const diff = entry?.input?.diffSent || "";
 
-  try {
-    const diff = entry?.input?.diffSent || "";
-    html = diff.trim()
-      ? Diff2Html.html(diff, {
-          diffStyle: "word",
-          drawFileList: false,
-          matching: "lines",
-          outputFormat,
-        })
-      : "";
-  } catch (caughtError) {
-    error = caughtError.message || String(caughtError);
+  if (!diff.trim()) {
+    vscode.window.showInformationMessage("No diff recorded for this history entry.");
+    return;
   }
 
-  await panel.webview.postMessage({
-    type: "diffRendered",
-    id,
-    mode: outputFormat,
-    html,
-    error,
+  const files = parseGitDiffFiles(diff);
+
+  if (files.length === 0) {
+    await openRawPatchDocument(id, diff);
+    return;
+  }
+
+  const selectedFile =
+    files.length === 1
+      ? files[0]
+      : await vscode.window.showQuickPick(
+          files.map((file) => ({
+            label: file.displayPath,
+            description: `${file.oldLines.length} -> ${file.newLines.length} lines`,
+            file,
+          })),
+          {
+            title: "Open history diff",
+            placeHolder: "Select a file from the saved patch",
+          }
+        );
+
+  const file = selectedFile?.file || selectedFile;
+
+  if (!file) {
+    return;
+  }
+
+  await openSyntheticDiffDocument(id, file);
+}
+
+async function openRawPatchDocument(id, diff) {
+  const uri = createHistoryDiffUri(id, "patch", "history.patch");
+  diffDocumentContents.set(uri.toString(), diff);
+
+  const document = await vscode.workspace.openTextDocument(uri);
+  await vscode.window.showTextDocument(document, {
+    preview: false,
+    viewColumn: vscode.ViewColumn.One,
   });
+}
+
+async function openSyntheticDiffDocument(id, file) {
+  const leftUri = createHistoryDiffUri(id, "before", file.displayPath);
+  const rightUri = createHistoryDiffUri(id, "after", file.displayPath);
+
+  diffDocumentContents.set(leftUri.toString(), file.oldLines.join("\n"));
+  diffDocumentContents.set(rightUri.toString(), file.newLines.join("\n"));
+
+  await vscode.commands.executeCommand(
+    "vscode.diff",
+    leftUri,
+    rightUri,
+    `History diff: ${file.displayPath}`,
+    { preview: false }
+  );
+}
+
+function createHistoryDiffUri(id, side, filePath) {
+  const safeId = encodeURIComponent(id || "unknown");
+  const safePath = String(filePath || "history.diff")
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+
+  return vscode.Uri.from({
+    scheme: HISTORY_DIFF_SCHEME,
+    path: `/${side}/${safePath}`,
+    query: `id=${safeId}&side=${encodeURIComponent(side)}`,
+  });
+}
+
+function parseGitDiffFiles(diff) {
+  return String(diff || "")
+    .split(/(?=^diff --git )/m)
+    .map(parseGitDiffFile)
+    .filter(Boolean);
+}
+
+function parseGitDiffFile(section) {
+  const lines = String(section || "").split(/\r?\n/);
+  const gitHeader = lines[0]?.match(/^diff --git a\/(.+) b\/(.+)$/);
+  let oldPath = gitHeader?.[1] || "";
+  let newPath = gitHeader?.[2] || "";
+  const oldLines = [];
+  const newLines = [];
+  let inHunk = false;
+
+  for (const line of lines) {
+    if (line.startsWith("--- ")) {
+      oldPath = normalizeDiffPath(line.slice(4), oldPath);
+      continue;
+    }
+
+    if (line.startsWith("+++ ")) {
+      newPath = normalizeDiffPath(line.slice(4), newPath);
+      continue;
+    }
+
+    if (line.startsWith("@@")) {
+      inHunk = true;
+      oldLines.push(line);
+      newLines.push(line);
+      continue;
+    }
+
+    if (!inHunk || line === "\\ No newline at end of file") {
+      continue;
+    }
+
+    if (line.startsWith("+")) {
+      newLines.push(line.slice(1));
+      continue;
+    }
+
+    if (line.startsWith("-")) {
+      oldLines.push(line.slice(1));
+      continue;
+    }
+
+    const content = line.startsWith(" ") ? line.slice(1) : line;
+    oldLines.push(content);
+    newLines.push(content);
+  }
+
+  const displayPath = newPath && newPath !== "/dev/null" ? newPath : oldPath;
+
+  if (!displayPath || (oldLines.length === 0 && newLines.length === 0)) {
+    return null;
+  }
+
+  return {
+    displayPath,
+    oldLines,
+    newLines,
+  };
+}
+
+function normalizeDiffPath(value, fallback) {
+  const pathValue = String(value || "").trim();
+
+  if (!pathValue || pathValue === "/dev/null") {
+    return pathValue || fallback || "";
+  }
+
+  return pathValue.replace(/^[ab]\//, "");
 }
 
 async function copyEntryField(context, id, field) {
@@ -267,18 +409,6 @@ function getHistoryHtml(webview, context, initialEntries = []) {
   const nonce = getNonce();
   const scriptUri = getWebviewUri(webview, context.extensionUri, "media", "history.js");
   const styleUri = getWebviewUri(webview, context.extensionUri, "media", "history.css");
-  const diffStyleUri = webview.asWebviewUri(
-    vscode.Uri.file(
-      path.join(
-        context.extensionPath,
-        "node_modules",
-        "diff2html",
-        "bundles",
-        "css",
-        "diff2html.min.css"
-      )
-    )
-  );
   const csp = [
     "default-src 'none'",
     `img-src ${webview.cspSource} data:`,
@@ -295,7 +425,6 @@ function getHistoryHtml(webview, context, initialEntries = []) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="${csp}">
-  <link rel="stylesheet" href="${diffStyleUri}">
   <link rel="stylesheet" href="${styleUri}">
   <title>Commit Generation History</title>
 </head>

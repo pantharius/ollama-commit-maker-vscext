@@ -10,7 +10,7 @@ VS Code extension that generates traceable Conventional Commit messages from sta
 - Builds a Conventional Commit prompt and sends it to the configured Ollama server.
 - Replaces the Git commit input with the generated commit message.
 - Saves a local JSONL trace for each generation attempt.
-- Provides a Webview history to inspect prompts, diffs, responses, and steps.
+- Provides a Webview history to inspect prompts, responses, steps, and open saved diffs in VS Code's native diff editor.
 
 The extension never commits automatically.
 
@@ -50,7 +50,7 @@ RTK absence is not an error. The fallback command is `git diff --staged --minima
 
 Each generation attempt is stored as one JSON line in VS Code extension storage, outside the user repository. The trace includes repository metadata, commit input, staged files, diff sent, prompt, Ollama response, final message, status, duration, and generation steps.
 
-Use `Open Commit Message History` to view the latest traces in a local Webview.
+Use `Open Commit Message History` to view the latest traces in a local Webview. From a trace, the saved patch can be opened in VS Code's native diff editor.
 
 ## Privacy
 
@@ -64,6 +64,7 @@ The extension sends the staged diff and prompt to `ollamaCommitMaker.ollamaUrl`.
 - Only staged changes are considered.
 - Large diffs are truncated according to `ollamaCommitMaker.maxDiffLength`.
 - The history Webview shows recent local traces only.
+- Historical diffs are reconstructed from saved patch hunks, not from full file snapshots.
 - No authentication is added for remote Ollama servers in the MVP.
 
 ## Development

@@ -1,19 +1,12 @@
 "use strict";
 
 const vscode = acquireVsCodeApi();
-const WIDE_DIFF_WIDTH = 1200;
 
 let entries = [];
 let filteredEntries = [];
 let selectedEntryId = null;
 let view = "list";
 let activeTab = "summary";
-let diffMode = window.innerWidth >= WIDE_DIFF_WIDTH ? "side-by-side" : "line-by-line";
-let wrapLines = true;
-let requestedDiffKey = null;
-let renderedDiffKey = null;
-let renderedDiffHtml = "";
-let renderedDiffError = null;
 
 const elements = {
   app: document.querySelector(".commit-history-app"),
@@ -223,22 +216,13 @@ function openEntry(id) {
   selectedEntryId = id;
   view = "detail";
   activeTab = "summary";
-  resetDiffCache();
   renderList();
   renderShell();
 }
 
 function showListView() {
   view = "list";
-  resetDiffCache();
   renderShell();
-}
-
-function resetDiffCache() {
-  requestedDiffKey = null;
-  renderedDiffKey = null;
-  renderedDiffHtml = "";
-  renderedDiffError = null;
 }
 
 function renderShell() {
@@ -443,78 +427,46 @@ function renderSummaryTab(entry) {
   return fragment;
 }
 
-function createDiffToolbar(entry) {
-  const toolbar = createElement("div", "diff-toolbar");
-  const badges = createElement("div", "diff-meta");
-  const controls = createElement("div", "diff-controls");
-  const widthWarning = createElement(
-    "span",
-    "diff-warning",
-    "Side-by-side works best on wide screens."
+function renderDiffTab(entry) {
+  const fragment = document.createDocumentFragment();
+  const actions = createSectionActions();
+  const section = createSection("Diff sent", actions);
+  const panel = createElement("div", "diff-open-panel");
+  const meta = createElement("div", "diff-meta");
+  const note = createElement(
+    "p",
+    "diff-note",
+    "Open the saved patch in VS Code's native diff editor. History traces store patch hunks, so the editor shows the recorded before/after hunks rather than a full repository snapshot."
   );
 
-  badges.append(
+  actions.append(
+    createButton("Open in VS Code diff editor", "", () =>
+      postMessage("openDiffInEditor", { id: entry.id })
+    ),
+    createButton("Copy diff", "", () => postMessage("copyDiff", { id: entry.id }))
+  );
+
+  meta.append(
     createBadge(entry?.input?.diffSource || "-", "source"),
     createBadge(entry?.input?.diffWasTruncated ? "truncated" : "complete", "model"),
     createBadge(formatDiffSize(entry), "model")
   );
 
-  const unifiedButton = createButton("Unified", diffMode === "line-by-line" ? "active" : "", () => {
-    diffMode = "line-by-line";
-    resetDiffCache();
-    renderDetail();
-  });
-  const sideButton = createButton("Side-by-side", diffMode === "side-by-side" ? "active" : "", () => {
-    diffMode = "side-by-side";
-    resetDiffCache();
-    renderDetail();
-  });
-  const wrapButton = createButton(wrapLines ? "Wrap lines" : "No wrap", wrapLines ? "active" : "", () => {
-    wrapLines = !wrapLines;
-    renderDetail();
-  });
+  panel.append(meta, note);
 
-  controls.append(
-    createButton("Copy diff", "", () => postMessage("copyDiff", { id: entry.id })),
-    unifiedButton,
-    sideButton,
-    wrapButton
-  );
-
-  if (diffMode === "side-by-side" && window.innerWidth < WIDE_DIFF_WIDTH) {
-    controls.appendChild(widthWarning);
-  }
-
-  toolbar.append(badges, controls);
-  return toolbar;
-}
-
-function renderDiffTab(entry) {
-  const fragment = document.createDocumentFragment();
-  const section = createSection("Diff sent");
-  const viewer = createElement("div", `diff-tab-content ${wrapLines ? "wrap-lines" : "no-wrap"}`);
-  const diffKey = `${entry.id}:${diffMode}`;
-
-  section.appendChild(createDiffToolbar(entry));
-  viewer.id = "diffContainer";
-  viewer.textContent = entry?.input?.diffSent ? "Rendering diff..." : "No diff recorded.";
-  section.appendChild(viewer);
-  fragment.appendChild(section);
-
-  if (renderedDiffKey === diffKey) {
-    if (renderedDiffError) {
-      viewer.textContent = `Unable to render diff: ${renderedDiffError}`;
-    } else if (renderedDiffHtml) {
-      viewer.innerHTML = renderedDiffHtml;
-    }
+  if (!entry?.input?.diffSent) {
+    panel.appendChild(createElement("p", "muted", "No diff recorded."));
+  } else {
+    const files = createElement("div", "diff-files");
+    files.appendChild(createElement("h3", "", "Files in this diff"));
+    appendStagedFiles(files, entry?.input?.stagedFilesRaw, entry?.input?.diffSent);
+    section.append(panel, files);
+    fragment.appendChild(section);
     return fragment;
   }
 
-  if (entry?.input?.diffSent && requestedDiffKey !== diffKey) {
-    requestedDiffKey = diffKey;
-    postMessage("renderDiff", { id: entry.id, mode: diffMode });
-  }
-
+  section.appendChild(panel);
+  fragment.appendChild(section);
   return fragment;
 }
 
@@ -643,36 +595,10 @@ function renderDetail() {
   elements.detailContent.append(header, renderTabs(entry));
 }
 
-function handleDiffRendered(message) {
-  if (view !== "detail") return;
-  if (activeTab !== "diff") return;
-  if (message.id !== selectedEntryId || message.mode !== diffMode) return;
-
-  renderedDiffKey = `${message.id}:${message.mode}`;
-  renderedDiffHtml = message.html || "";
-  renderedDiffError = message.error || null;
-
-  const container = document.getElementById("diffContainer");
-  if (!container) return;
-
-  if (message.error) {
-    container.textContent = `Unable to render diff: ${message.error}`;
-    return;
-  }
-
-  if (!message.html) {
-    container.textContent = "No diff recorded.";
-    return;
-  }
-
-  container.innerHTML = message.html;
-}
-
 function handleHistoryData(message) {
   try {
     entries = Array.isArray(message.entries) ? message.entries : [];
     console.log(`[Ollama Commit Maker Webview] received ${entries.length} history entries`);
-    resetDiffCache();
 
     if (!entries.some((entry) => getEntryId(entry) === selectedEntryId)) {
       selectedEntryId = null;
@@ -717,9 +643,6 @@ try {
       openEntry(id);
     }
   });
-  window.addEventListener("resize", () => {
-    if (view === "detail" && activeTab === "diff") renderDetail();
-  });
   hydrateInitialHistoryData();
 } catch (error) {
   reportFatalError(error);
@@ -730,11 +653,6 @@ window.addEventListener("message", (event) => {
 
   if (message.type === "historyData") {
     handleHistoryData(message);
-    return;
-  }
-
-  if (message.type === "diffRendered") {
-    handleDiffRendered(message);
   }
 });
 

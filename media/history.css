@@ -470,115 +470,39 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.commit-history-app .diff-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.commit-history-app .diff-open-panel {
+  display: grid;
   gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.commit-history-app .diff-warning {
-  color: var(--vscode-descriptionForeground);
-}
-
-.commit-history-app .diff-tab-content {
-  width: 100%;
-  max-height: calc(100vh - 260px);
-  min-height: 380px;
-  overflow: auto;
+  padding: 12px;
   border: 1px solid var(--vscode-panel-border);
-  background: var(--vscode-editor-background);
+  background: var(--vscode-input-background);
 }
 
-.commit-history-app .diff-tab-content .d2h-wrapper {
-  min-width: 920px;
-  background: var(--vscode-editor-background);
-  color: var(--vscode-editor-foreground);
+.commit-history-app .diff-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.commit-history-app .diff-tab-content.wrap-lines .d2h-wrapper {
-  min-width: 0;
-}
-
-.commit-history-app .diff-tab-content.no-wrap .d2h-wrapper {
-  min-width: 1120px;
-}
-
-.commit-history-app .diff-tab-content .d2h-file-wrapper {
-  margin: 0 0 14px;
-  border-color: var(--vscode-panel-border);
-  background: var(--vscode-editor-background);
-}
-
-.commit-history-app .diff-tab-content .d2h-file-header {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  border-color: var(--vscode-panel-border);
-  background: var(--vscode-sideBar-background);
-  color: var(--vscode-editor-foreground);
-}
-
-.commit-history-app .diff-tab-content .d2h-file-name {
-  color: var(--vscode-editor-foreground);
-}
-
-.commit-history-app .diff-tab-content .d2h-diff-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-family: var(--vscode-editor-font-family);
-  font-size: var(--vscode-editor-font-size);
+.commit-history-app .diff-note {
+  max-width: 900px;
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
   line-height: 1.45;
-  background: var(--vscode-editor-background);
 }
 
-.commit-history-app .diff-tab-content .d2h-code-line,
-.commit-history-app .diff-tab-content .d2h-code-side-line {
-  color: var(--vscode-editor-foreground);
-  background: transparent;
+.commit-history-app .diff-files {
+  margin-top: 12px;
 }
 
-.commit-history-app .diff-tab-content .d2h-code-linenumber,
-.commit-history-app .diff-tab-content .d2h-code-side-linenumber {
-  width: 56px;
-  min-width: 56px;
-  color: var(--vscode-editorLineNumber-foreground);
-  background: var(--vscode-editorGutter-background, var(--vscode-editor-background));
-  border-color: var(--vscode-panel-border);
-}
-
-.commit-history-app .diff-tab-content .d2h-ins,
-.commit-history-app .diff-tab-content .d2h-code-line-ctn.d2h-ins {
-  background: var(--vscode-diffEditor-insertedTextBackground);
-}
-
-.commit-history-app .diff-tab-content .d2h-del,
-.commit-history-app .diff-tab-content .d2h-code-line-ctn.d2h-del {
-  background: var(--vscode-diffEditor-removedTextBackground);
-}
-
-.commit-history-app .diff-tab-content .d2h-info {
+.commit-history-app .diff-files h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--vscode-descriptionForeground);
-  background: var(--vscode-editor-lineHighlightBackground);
-}
-
-.commit-history-app .diff-tab-content .d2h-code-line-prefix,
-.commit-history-app .diff-tab-content .d2h-code-side-line-prefix {
-  color: var(--vscode-descriptionForeground);
-}
-
-.commit-history-app .diff-tab-content.wrap-lines .d2h-code-line-ctn,
-.commit-history-app .diff-tab-content.wrap-lines .d2h-code-side-line-ctn {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.commit-history-app .diff-tab-content.no-wrap .d2h-code-line-ctn,
-.commit-history-app .diff-tab-content.no-wrap .d2h-code-side-line-ctn {
-  white-space: pre;
+  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 .commit-history-app .steps-table {
@@ -624,9 +548,5 @@ body {
 
   .commit-history-app .summary-grid {
     grid-template-columns: 1fr;
-  }
-
-  .commit-history-app .diff-tab-content {
-    max-height: 68vh;
   }
 }
