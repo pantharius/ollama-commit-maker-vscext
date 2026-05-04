@@ -66,6 +66,13 @@ suite("Ollama Commit Maker Extension", () => {
     assert.strictEqual(typeof history.appendHistoryEntry, "function");
     assert.strictEqual(typeof history.readHistoryEntries, "function");
     assert.strictEqual(typeof history.getHistoryFileUri, "function");
+    assert.strictEqual(typeof history.getHistoryEntryById, "function");
+  });
+
+  test("History Webview module should expose expected functions", () => {
+    const historyWebview = require("../src/historyWebview");
+
+    assert.strictEqual(typeof historyWebview.openHistoryWebview, "function");
   });
 
   test("Ollama helper should clean generated commit messages", () => {

@@ -12,7 +12,8 @@ const {
 const { detectRtk, tryGetRtkDiff } = require("./src/rtk");
 const { buildCommitPrompt } = require("./src/prompt");
 const { generateCommitMessageWithOllama } = require("./src/ollama");
-const { appendHistoryEntry, getHistoryFileUri } = require("./src/history");
+const { appendHistoryEntry } = require("./src/history");
+const { openHistoryWebview } = require("./src/historyWebview");
 
 const GENERATE_COMMAND = "ollamaCommitMaker.generateCommitMessage";
 const OPEN_HISTORY_COMMAND = "ollamaCommitMaker.openHistory";
@@ -405,31 +406,6 @@ async function generateCommitMessageWithProgress(context, progress) {
   }
 }
 
-async function openHistory(context) {
-  try {
-    const historyFileUri = getHistoryFileUri(context);
-
-    await vscode.workspace.fs.stat(historyFileUri);
-
-    const document = await vscode.workspace.openTextDocument(historyFileUri);
-    await vscode.window.showTextDocument(document);
-  } catch (error) {
-    if (
-      error.code === "FileNotFound" ||
-      error.name === "EntryNotFound" ||
-      String(error.message || "").includes("ENOENT")
-    ) {
-      vscode.window.showInformationMessage("No commit generation history yet.");
-      return;
-    }
-
-    console.error("[Ollama Commit Maker] Failed to open history", error);
-    vscode.window.showErrorMessage(
-      `Ollama Commit Maker: ${error.message || "Unable to open history."}`
-    );
-  }
-}
-
 function activate(context) {
   void detectConfiguredRtk();
 
@@ -439,7 +415,7 @@ function activate(context) {
   );
   const openHistoryCommand = vscode.commands.registerCommand(
     OPEN_HISTORY_COMMAND,
-    () => openHistory(context)
+    () => openHistoryWebview(context)
   );
 
   context.subscriptions.push(generateCommand, openHistoryCommand);

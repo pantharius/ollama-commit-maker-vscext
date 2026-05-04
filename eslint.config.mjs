@@ -32,4 +32,13 @@ export default [
       "valid-typeof": "warn",
     },
   },
+  {
+    files: ["media/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        acquireVsCodeApi: "readonly",
+      },
+    },
+  },
 ];

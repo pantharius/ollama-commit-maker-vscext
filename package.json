@@ -102,5 +102,8 @@
     "eslint": "^9.21.0",
     "globals": "^16.5.0",
     "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "diff2html": "^3.4.56"
   }
 }

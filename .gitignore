@@ -1,3 +1,9 @@
 node_modules
 .vscode-test/
 *.vsix
+.npm-cache/
+*.log
+*.tmp
+*.map
+history.jsonl
+commit-history/

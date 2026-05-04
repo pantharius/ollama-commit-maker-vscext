@@ -1,6 +1,8 @@
+.git/**
 .vscode/**
 .vscode-test/**
 test/**
+.npm-cache/**
 .gitignore
 .yarnrc
 vsc-extension-quickstart.md
@@ -8,5 +10,13 @@ vsc-extension-quickstart.md
 **/*.map
 **/eslint.config.mjs
 **/.vscode-test.*
+*.vsix
+*.log
+*.tmp
+*.png.tmp
+screenshots/**
+history.jsonl
+commit-history/**
 sounds/**
 themes.json
+!media/**
