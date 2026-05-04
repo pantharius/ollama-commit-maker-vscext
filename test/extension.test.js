@@ -56,7 +56,10 @@ suite("Ollama Commit Maker Extension", () => {
   test("Ollama helper module should expose expected functions", () => {
     const ollama = require("../src/ollama");
 
-    assert.strictEqual(typeof ollama.generateCommitMessageWithOllama, "function");
+    assert.strictEqual(
+      typeof ollama.generateCommitMessageWithOllama,
+      "function",
+    );
     assert.strictEqual(typeof ollama.cleanGeneratedCommitMessage, "function");
   });
 
@@ -80,28 +83,38 @@ suite("Ollama Commit Maker Extension", () => {
 
     assert.strictEqual(
       cleanGeneratedCommitMessage("fix: update login"),
-      "fix: update login"
+      "fix: update login",
     );
     assert.strictEqual(
       cleanGeneratedCommitMessage("```text\nfeat: add history\n```"),
-      "feat: add history"
+      "feat: add history",
     );
     assert.strictEqual(
-      cleanGeneratedCommitMessage("Here is the commit message: docs: update readme"),
-      "docs: update readme"
+      cleanGeneratedCommitMessage(
+        "Here is the commit message: docs: update readme",
+      ),
+      "docs: update readme",
     );
   });
 
   test("Commands should be registered", async () => {
-    const commands = await vscode.commands.getCommands(true);
+    const extension = vscode.extensions.getExtension(
+      "pantharius.ollama-commit-maker",
+    );
+    assert.ok(extension, "Extension should be present");
 
+    if (!extension.isActive) {
+      await extension.activate();
+    }
+
+    const commands = await vscode.commands.getCommands(true);
     assert.ok(
       commands.includes("ollamaCommitMaker.generateCommitMessage"),
-      "generate command should be registered"
+      "generate command should be registered",
     );
     assert.ok(
       commands.includes("ollamaCommitMaker.openHistory"),
-      "history command should be registered"
+      "history command should be registered",
     );
   });
 });
