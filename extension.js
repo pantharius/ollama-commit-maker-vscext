@@ -13,7 +13,7 @@ const { detectRtk, tryGetRtkDiff } = require("./src/rtk");
 const { buildCommitPrompt } = require("./src/prompt");
 const { generateCommitMessageWithOllama } = require("./src/ollama");
 const { appendHistoryEntry } = require("./src/history");
-const { openHistoryWebview } = require("./src/historyWebview");
+const { openHistoryWebview, refreshOpenHistory } = require("./src/historyWebview");
 
 const GENERATE_COMMAND = "ollamaCommitMaker.generateCommitMessage";
 const OPEN_HISTORY_COMMAND = "ollamaCommitMaker.openHistory";
@@ -150,6 +150,7 @@ function buildHistoryEntry({
       stagedFilesRaw: input.stagedFilesRaw || "",
       stagedFilesCount: input.stagedFilesCount || 0,
       diffSource: input.diffSource || null,
+      diffFull: input.diffFull || "",
       diffOriginalLength: input.diffOriginalLength || 0,
       diffSentLength: input.diffSentLength || 0,
       diffWasTruncated: input.diffWasTruncated || false,
@@ -285,6 +286,7 @@ async function generateCommitMessageWithProgress(context, progress) {
     const rawDiffLength = collectedDiff.diff.length;
     const truncatedDiff = truncateDiff(collectedDiff.diff, config.maxDiffLength);
     input.diffSource = collectedDiff.source;
+    input.diffFull = collectedDiff.diff;
     input.diffOriginalLength = rawDiffLength;
     input.diffSentLength = truncatedDiff.diff.length;
     input.diffWasTruncated = truncatedDiff.truncated;
@@ -403,6 +405,7 @@ async function generateCommitMessageWithProgress(context, progress) {
     });
 
     await appendHistoryEntry(context, entry);
+    await refreshOpenHistory(context, "generation");
   }
 }
 

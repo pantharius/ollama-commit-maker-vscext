@@ -7,3 +7,4 @@ node_modules
 *.map
 history.jsonl
 commit-history/
+webview/dist/

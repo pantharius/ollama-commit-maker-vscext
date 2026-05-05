@@ -6,6 +6,8 @@ export default [
       "node_modules/**",
       ".vscode-test/**",
       ".npm-cache/**",
+      "webview/dist/**",
+      "webview/node_modules/**",
       "*.vsix",
     ],
   },

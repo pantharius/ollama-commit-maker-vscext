@@ -2,7 +2,7 @@
   "name": "ollama-commit-maker",
   "displayName": "Ollama Commit Maker",
   "description": "Generate traceable Conventional Commit messages from staged changes using Ollama.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "url": "https://github.com/pantharius/ollama-commit-maker-vscext",
     "type": "git"
@@ -24,6 +24,9 @@
     "Other"
   ],
   "main": "./extension.js",
+  "workspaces": [
+    "webview"
+  ],
   "activationEvents": [
     "onCommand:ollamaCommitMaker.generateCommitMessage",
     "onCommand:ollamaCommitMaker.openHistory"
@@ -90,10 +93,12 @@
     }
   },
   "scripts": {
+    "build": "npm run webview:build",
+    "webview:build": "npm --workspace webview run build",
     "lint": "eslint .",
     "pretest": "npm run lint",
     "test": "vscode-test",
-    "package": "vsce package",
+    "package": "npm run build && vsce package",
     "publish": "vsce publish"
   },
   "devDependencies": {

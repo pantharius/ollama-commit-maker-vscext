@@ -19,4 +19,11 @@ history.jsonl
 commit-history/**
 sounds/**
 themes.json
-!media/**
+media/**
+webview/src/**
+webview/node_modules/**
+webview/package.json
+webview/scripts/**
+webview/tsconfig.json
+webview/vite.config.*
+!webview/dist/**

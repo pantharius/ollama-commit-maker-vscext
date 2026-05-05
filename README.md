@@ -9,8 +9,8 @@ VS Code extension that generates traceable Conventional Commit messages from sta
 - Uses RTK when available, with `git diff --staged` as the reliable fallback.
 - Builds a Conventional Commit prompt and sends it to the configured Ollama server.
 - Replaces the Git commit input with the generated commit message.
-- Saves a local JSONL trace for each generation attempt.
-- Provides a Webview history to inspect prompts, responses, steps, and open saved diffs in VS Code's native diff editor.
+- Saves a local JSONL trace for each generation attempt, including the full staged diff for audit.
+- Provides a static React Webview history to inspect prompts, responses, steps, and saved diffs.
 
 The extension never commits automatically.
 
@@ -48,15 +48,21 @@ RTK absence is not an error. The fallback command is `git diff --staged --minima
 
 ## History And Traceability
 
-Each generation attempt is stored as one JSON line in VS Code extension storage, outside the user repository. The trace includes repository metadata, commit input, staged files, diff sent, prompt, Ollama response, final message, status, duration, and generation steps.
+Each generation attempt is stored as one JSON line in VS Code extension storage, outside the user repository. The trace includes repository metadata, commit input, staged files, the full staged diff, the diff sent to the model, prompt, Ollama response, final message, status, duration, and generation steps.
 
-Use `Open Commit Message History` to view the latest traces in a local Webview. From a trace, the saved patch can be opened in VS Code's native diff editor.
+`ollamaCommitMaker.maxDiffLength` only limits the diff sent to Ollama. The full staged diff is still saved locally in history so you can audit what was staged at generation time.
+
+Use `Open Commit Message History` to view the latest traces in a local React Webview bundled with the extension. The Webview is built with Vite into static files; it does not run a development server or make network requests.
+
+From a trace, the saved patch can be viewed in the embedded diff viewer or opened in VS Code's native diff editor.
 
 ## Privacy
 
 There is no backend and no telemetry.
 
-The extension sends the staged diff and prompt to `ollamaCommitMaker.ollamaUrl`. Diffs and prompts can contain sensitive code. Local history is stored in VS Code extension storage and is not written into the repository.
+The extension sends the prompt, including staged diff content, to `ollamaCommitMaker.ollamaUrl`. Diffs and prompts can contain sensitive code. Local history can contain the complete staged diff and is stored in VS Code extension storage, not in the repository.
+
+The History Webview loads only bundled local assets. There is no CDN, backend, telemetry, or browser-side network call.
 
 ## Known Limitations
 
@@ -65,12 +71,14 @@ The extension sends the staged diff and prompt to `ollamaCommitMaker.ollamaUrl`.
 - Large diffs are truncated according to `ollamaCommitMaker.maxDiffLength`.
 - The history Webview shows recent local traces only.
 - Historical diffs are reconstructed from saved patch hunks, not from full file snapshots.
+- Older traces created before `diffFull` existed only show the diff that was sent to the model.
 - No authentication is added for remote Ollama servers in the MVP.
 
 ## Development
 
 ```bash
 npm install
+npm run webview:build
 npm run lint
 ```
 

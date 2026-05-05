@@ -1,0 +1,20 @@
+{
+  "name": "ollama-commit-maker-webview",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-diff-view": "^3.3.3",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.7"
+  }
+}

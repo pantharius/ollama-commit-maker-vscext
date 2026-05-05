@@ -84,6 +84,9 @@ async function readHistoryEntries(context, options = {}) {
     }
 
     console.error("[Ollama Commit Maker] Failed to read history entries", error);
+    if (options.throwOnError) {
+      throw error;
+    }
     return [];
   }
 }
